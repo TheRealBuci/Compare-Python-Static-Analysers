@@ -1,0 +1,303 @@
+<html>
+    <head>
+      <title>Test results</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                border-width: 1px;
+            }
+            table, th, td {
+                border: 1px solid black;
+            }
+            .content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.2s ease-out;
+            }
+
+            .modal {
+                display: none; /* Hidden by default */
+                position: fixed; /* Stay in place */
+                z-index: 1; /* Sit on top */
+                left: 0;
+                top: 0;
+                width: 100%; /* Full width */
+                height: 100%; /* Full height */
+                overflow: auto; /* Enable scroll if needed */
+                background-color: rgb(0,0,0); /* Fallback color */
+                background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            }
+
+            .modal-content {
+                background-color: #fefefe;
+                margin: 15% auto; /* 15% from the top and centered */
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%; /* Could be more or less, depending on screen size */
+                white-space: pre;
+            }
+
+            .collapse_button {
+                width: 100%;
+                height: 100%;
+                margin: 0%;
+            }
+
+            .intro{
+                font-size: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="code_modal" class="modal">
+            <div class="modal-content">
+              <p class="modal-text"></p>
+            </div>
+          </div>
+        <div class="intro">
+        <b>Tested rules:</b><br>
+        <a href="https://rules.sonarsource.com/python/type/Bug/">SonarSource</a><br><br>
+        <b>Running environment:</b><br>
+        Operating System: {{os}}<br>
+        Python version: {{py}}<br>
+        Run time: {{time}} seconds<br><br><br>
+        </div>
+        <table>
+            <tr><th colspan="100%"><button type="button" class="collapse_button" onclick="hide1(this)">INCORRECT FILES</button></th></tr>
+            <tr class="content1">
+                <th>Test File</th>
+                <th>Description</th>
+                {% for tool in tools -%}
+                <th colspan="2">{{tool}}</th>
+                {% endfor %}
+            </tr>
+            <tr class="content1">
+                <th></th>
+                <th></th>
+                {% for tool in tools -%}
+                <th>Checker</th>
+                <th>Checker message</th>
+                {% endfor %}
+            </tr>
+            {% for file, desc, content in incorrect_files_and_descriptitons_and_contents -%}
+            {% if ("incorrect/"+file|string) in (results|string) %}
+            <tr bgcolor="#A1DE93" class="content1">
+            {% else %}
+            <tr bgcolor="#F47C7C" class="content1">
+            {% endif %}
+                <td rowspan="{{maxfilecounts[file]}}">
+                    {{file}}<br>
+                    <button type="button" class="modal_btn" id="code_btn_{{loop.index}}">View code</button>
+                    <div id="code_{{loop.index}}" style="display:none">
+{{content}}
+                    </div>
+                </td>
+                <td rowspan="{{maxfilecounts[file]}}">{{desc}}</td>
+                {% for num in range(maxfilecounts[file])-%}
+                {% if num > 0 %}
+                <tr class="content1">
+                {% endif %}
+                {% for tool in tools -%}
+                {% set found = namespace(value=0) %}
+                    {% for res in results[tool]["results"] -%}
+                        {% set filename = "incorrect/" + file %}
+                        {% if filename in res["file_name"] and not res["supressed"] %}
+                        {% set found.value = found.value + 1 %}
+                            {% if num == found.value - 1 %}
+                <td bgcolor="#A1DE93">{{res["checker_name"]}}</td>
+                <td bgcolor="#A1DE93">{{res["checker_message"]}}</td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if found.value == 0 and num == 0 %}
+                <td bgcolor="#F47C7C"></td>
+                <td bgcolor="#F47C7C"></td>
+                    {% elif num >= found.value %}
+                <td bgcolor="#FFF5BA"></td>
+                <td bgcolor="#FFF5BA"></td>
+                    {% endif %}
+                {% endfor %}
+                </tr>
+                {% endfor %}
+            {% endfor %}
+        </table>
+        <br>
+        <br>
+        <table>
+            <tr>
+                <tr><th colspan="100%"><button type="button" class="collapse_button" onclick="hide2(this)">CORRECT FILES</button></th></tr>
+            </tr>
+            <tr class="content2">
+                <th>Test File</th>
+                <th>Description</th>
+                {% for tool in tools -%}
+                <th colspan="2">{{tool}}</th>
+                {% endfor %}
+            </tr>
+            <tr class="content2">
+                <th></th>
+                <th></th>
+                {% for tool in tools -%}
+                <th>Checker</th>
+                <th>Checker message</th>
+                {% endfor %}
+            </tr>
+            {% for file, desc, content in correct_files_and_descriptitons_and_contents -%}
+            {% if ("correct/"+file|string) in (results|string) %}
+            <tr bgcolor="#F47C7C" class="content2">
+            {% else %}
+            <tr bgcolor="#A1DE93" class="content2">
+            {% endif %}
+                <td rowspan="{{maxfilecounts[file]}}">
+                    {{file}}<br>
+                    <button type="button" class="modal_btn" id="code_btn_{{loop.index}}_2">View code</button>
+                    <div id="code_{{loop.index}}_2" style="display:none">
+{{content}}
+                    </div>
+                </td>
+                <td rowspan="{{maxfilecounts[file]}}">{{desc}}</td>
+                {% for num in range(maxfilecounts[file])-%}
+                {% if num > 0 %}
+                <tr class="content2">
+                {% endif %}
+                {% for tool in tools -%}
+                {% set found = namespace(value=0) %}
+                    {% for res in results[tool]["results"] -%}
+                            {% set filename = "correct/" + file %}
+                            {% if filename in res["file_name"] %}
+                                {% set found.value = found.value + 1 %}
+                                {% if num == found.value - 1 %}
+                <td bgcolor="#F47C7C">{{res["checker_name"]}}</td>
+                <td bgcolor="#F47C7C">{{res["checker_message"]}}</td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if found.value == 0 and num == 0 %}
+                <td bgcolor="#A1DE93"></td>
+                <td bgcolor="#A1DE93"></td>
+                    {% elif num >= found.value %}
+                <td bgcolor="#FFF5BA"></td>
+                <td bgcolor="#FFF5BA"></td>
+                    {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+        <br>
+        <br>
+        <table>
+            <tr><th colspan="100%">SUMMARY</th></tr>
+            <tr>
+                <th></th>
+                {% for tool in tools -%}
+                <th>{{tool}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th align="left">Errors found correctly in incorrect files</th>
+                {% for tool in tools -%}
+                <td>{{correrr[tool]}}/{{incorrect_files_and_descriptitons_and_contents|length}}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th align="left">Errors regarding exceptions</th>
+                {% for tool in tools -%}
+                <td>{{caughtexceptions[tool]}}/{{exceptions}}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th align="left">Errors regarding regex</th>
+                {% for tool in tools -%}
+                <td>{{caughtregex[tool]}}/{{regex}}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th align="left">Errors regarding function parameters and arguments</th>
+                {% for tool in tools -%}
+                <td>{{caughtargandparamnums[tool]}}/{{argandparamnums}}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th align="left">Errors regarding other topics</th>
+                {% for tool in tools -%}
+                <td>{{caughtothers[tool]}}/{{others}}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th align="left">False errors found in correct files</th>
+                {% for tool in tools -%}
+                <td>{{incorrerr[tool]}}/{{correct_files_and_descriptitons_and_contents|length}}</td>
+                {% endfor %}
+            </tr>
+        </table>
+    </body>
+    <script>
+        var coll = document.getElementsByClassName("collapsible");
+        var i;
+  
+        for (i = 0; i < coll.length; i++) {
+          coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var suppressed = document.getElementsByClassName("suppressed_"+this.id);
+            for(let element of suppressed){
+              if (element.style.maxHeight) {
+                element.style.maxHeight = null;
+              } else {
+                element.style.maxHeight = element.scrollHeight + "px";
+              }
+            }
+          });
+        }
+  
+        // Get the modal
+        var modal = document.getElementById("code_modal");
+  
+        var j;
+        var mdl_btns = document.getElementsByClassName("modal_btn");
+        var p = document.getElementsByClassName("modal-text")[0];
+        for (j = 0; j < mdl_btns.length; j++) {
+          mdl_btns[j].addEventListener("click", function() {
+              modal.style.display = "block";
+              var btnId = this.id.slice(9);
+              console.log(btnId);
+              var code_contents = document.getElementById("code_".concat(btnId)).innerHTML;
+              p.innerHTML = code_contents;
+          });
+        }
+  
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        }
+
+        let hide1 = button =>{
+            let elements = document.querySelectorAll(".content1");
+
+            elements.forEach(element => {
+                if(element.getAttribute("hidden")){
+                    element.removeAttribute("hidden");
+                }
+                else{
+                    element.setAttribute("hidden", "hidden");
+                }
+            });
+        }
+
+        let hide2 = button =>{
+            let elements = document.querySelectorAll(".content2");
+
+            elements.forEach(element => {
+                if(element.getAttribute("hidden")){
+                    element.removeAttribute("hidden");
+                }
+                else{
+                    element.setAttribute("hidden", "hidden");
+                }
+            });
+        }
+      </script>
+</html>
